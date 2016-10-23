@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SunshineWearApp</string>
+    <string name="message">Watch face tapped</string>
+    <string name="my_analog_name">My Analog</string>
+    <string name="hello_square">My square watch</string>
+    <string name="hello_round">My round watch</string>
+
+</resources>
