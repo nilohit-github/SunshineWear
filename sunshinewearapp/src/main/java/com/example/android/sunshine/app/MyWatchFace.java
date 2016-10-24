@@ -35,8 +35,17 @@ import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
@@ -48,13 +57,15 @@ import java.util.concurrent.TimeUnit;
  * shown. On devices with low-bit ambient mode, the hands are drawn without anti-aliasing in ambient
  * mode. The watch face is drawn with less contrast in mute mode.
  */
-public class MyWatchFace extends CanvasWatchFaceService {
+public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     /*
      * Update rate in milliseconds for interactive mode. We update once a second to advance the
      * second hand.
      */
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
+    private static final String WEARABLE_DATA_PATH = "/wearable_data";
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
@@ -64,6 +75,40 @@ public class MyWatchFace extends CanvasWatchFaceService {
     @Override
     public Engine onCreateEngine() {
         return new Engine();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onDataChanged(DataEventBuffer dataEventBuffer) {
+
+        Log.d("DataChange","11111");
+        DataMap dataMap;
+        for (DataEvent event : dataEventBuffer) {
+
+            // Check the data type
+            if (event.getType() == DataEvent.TYPE_CHANGED) {
+                // Check the data path
+                String path = event.getDataItem().getUri().getPath();
+                if (path.equals(WEARABLE_DATA_PATH)) {
+                }
+                dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+                Log.v("myTag", "DataMap received on watch: " + dataMap);
+            }   }
+
     }
 
     private static class EngineHandler extends Handler {
@@ -492,6 +537,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mUpdateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME);
             }
         }
+
+
 
         /**
          * Returns whether the {@link #mUpdateTimeHandler} timer should be running. The timer

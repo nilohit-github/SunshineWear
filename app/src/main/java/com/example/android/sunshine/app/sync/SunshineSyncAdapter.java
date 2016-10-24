@@ -63,7 +63,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
         GoogleApiClient.OnConnectionFailedListener {
     public final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
     GoogleApiClient googleClient;
-    Context mContext;
+    Context mContext = getContext();
     public static final String ACTION_DATA_UPDATED =
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
     // Interval at which to sync with the weather, in seconds.
@@ -199,7 +199,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                 uriBuilder.appendQueryParameter(LAT_PARAM, locationLatitude)
                         .appendQueryParameter(LON_PARAM, locationLongitude);
             } else {
-                uriBuilder.appendQueryParameter(QUERY_PARAM, locationQuery);
+                uriBuilder.appendQueryParameter(QUERY_PARAM, locationQuery+"usa");
             }
 
             Uri builtUri = uriBuilder.appendQueryParameter(FORMAT_PARAM, format)
@@ -209,6 +209,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                     .build();
 
             URL url = new URL(builtUri.toString());
+            Log.i("url++++",url.toString());
 
             // Create the request to OpenWeatherMap, and open the connection
             urlConnection = (HttpURLConnection) url.openConnection();
