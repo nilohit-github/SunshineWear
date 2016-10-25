@@ -95,7 +95,7 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
     @Override
     public void onDataChanged(DataEventBuffer dataEventBuffer) {
 
-        Log.d("DataChange","11111");
+        Log.d("DataChange in::","222222");
         DataMap dataMap;
         for (DataEvent event : dataEventBuffer) {
 
