@@ -46,6 +46,7 @@ import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
@@ -57,8 +58,8 @@ import java.util.concurrent.TimeUnit;
  * shown. On devices with low-bit ambient mode, the hands are drawn without anti-aliasing in ambient
  * mode. The watch face is drawn with less contrast in mute mode.
  */
-public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataListener,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MyWatchFace extends CanvasWatchFaceService  {
+    private static final String TAG = "MyWatchFace";
 
     /*
      * Update rate in milliseconds for interactive mode. We update once a second to advance the
@@ -77,39 +78,7 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
         return new Engine();
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
 
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
-    }
-
-    @Override
-    public void onDataChanged(DataEventBuffer dataEventBuffer) {
-
-        Log.d("DataChange in::","222222");
-        DataMap dataMap;
-        for (DataEvent event : dataEventBuffer) {
-
-            // Check the data type
-            if (event.getType() == DataEvent.TYPE_CHANGED) {
-                // Check the data path
-                String path = event.getDataItem().getUri().getPath();
-                if (path.equals(WEARABLE_DATA_PATH)) {
-                }
-                dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
-                Log.v("myTag", "DataMap received on watch: " + dataMap);
-            }   }
-
-    }
 
     private static class EngineHandler extends Handler {
         private final WeakReference<MyWatchFace.Engine> mWeakReference;
@@ -129,9 +98,12 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
                 }
             }
         }
+
+
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
+            GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener  {
         private static final float HOUR_STROKE_WIDTH = 5f;
         private static final float MINUTE_STROKE_WIDTH = 3f;
         private static final float SECOND_TICK_STROKE_WIDTH = 2f;
@@ -171,6 +143,9 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
         private boolean mAmbient;
         private boolean mLowBitAmbient;
         private boolean mBurnInProtection;
+
+        GoogleApiClient mGoogleApiClient ;
+
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -234,6 +209,13 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
             });
 
             mCalendar = Calendar.getInstance();
+
+            mGoogleApiClient = new GoogleApiClient.Builder(MyWatchFace.this)
+                    .addApi(Wearable.API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+            mGoogleApiClient.connect();
         }
 
         @Override
@@ -493,6 +475,7 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
             super.onVisibilityChanged(visible);
 
             if (visible) {
+               // mGoogleApiClient.connect();
                 registerReceiver();
                 /* Update time zone in case it changed while we weren't visible. */
                 mCalendar.setTimeZone(TimeZone.getDefault());
@@ -538,6 +521,26 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
             }
         }
 
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+
+            Log.d("DataChange in::","222222");
+            DataMap dataMap;
+            for (DataEvent event : dataEventBuffer) {
+
+                // Check the data type
+                if (event.getType() == DataEvent.TYPE_CHANGED) {
+                    // Check the data path
+                    String path = event.getDataItem().getUri().getPath();
+                    if (path.equals(WEARABLE_DATA_PATH)) {
+                    }
+                    dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+                    Log.v("myTag", "DataMap received on watch: " + dataMap);
+                }   }
+
+        }
+
+
 
 
         /**
@@ -559,6 +562,21 @@ public class MyWatchFace extends CanvasWatchFaceService implements DataApi.DataL
                         - (timeMs % INTERACTIVE_UPDATE_RATE_MS);
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
+        }
+
+        @Override
+        public void onConnected(Bundle bundle) {
+
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+
+        }
+
+        @Override
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+
         }
     }
 }

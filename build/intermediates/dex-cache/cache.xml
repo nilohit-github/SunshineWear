@@ -7,7 +7,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.2"
-        sha1="4da8399db4140089afe6f97b131a33119736ce0f">
+        sha1="20a3376cb01f01e43f5c38f9ca378d71a9c7de81">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\sunshinewearapp\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run_460cc25e09e39ae0f1403733384be7e50ab4c833\classes.dex" />
     </item>
     <item
@@ -97,7 +97,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.2"
-        sha1="e643d04c16ce47fe8588d01fe73f04f5cb515902">
+        sha1="055a61d4f7d6a0e637de17700b88614ba09b264b">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\sunshinewearapp\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run-bootstrap_49de5546dc8260bad7a5ad92005fdbb04410a89d\classes.dex" />
     </item>
     <item
@@ -187,7 +187,7 @@
         jumboMode="true"
         optimize="true"
         revision="21.1.2"
-        sha1="64e04887c0ba5589069c5e0cc4a80e0f177420ca">
+        sha1="85b89db28691443c911b24b39834827054edc5a7">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\app\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run-bootstrap_231ec6be3d67b20f51ee290a623be936d20e3224\classes.dex" />
     </item>
     <item
@@ -295,7 +295,7 @@
         jumboMode="true"
         optimize="true"
         revision="21.1.2"
-        sha1="a729efad5a7b8efd235b8ab28a2f97fc0eb27b26">
+        sha1="85ad3d4c302e26d30707d234d0c9913ce4e4b249">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\app\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run_cbf89d4706003db2d911fa4ec4fa75970ec2ba0b\classes.dex" />
     </item>
     <item
