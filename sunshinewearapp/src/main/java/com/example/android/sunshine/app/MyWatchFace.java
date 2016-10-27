@@ -566,17 +566,18 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
         @Override
         public void onConnected(Bundle bundle) {
-
+            Log.i(TAG, "onConnected");
+            Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-
+            Log.i(TAG, "onConnectionSuspended");
         }
 
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) {
-
+            Log.i(TAG, "onConnectionFailed");
         }
     }
 }
