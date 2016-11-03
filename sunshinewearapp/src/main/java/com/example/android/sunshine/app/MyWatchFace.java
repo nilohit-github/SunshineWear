@@ -28,13 +28,14 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.graphics.Palette;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.Toast;
@@ -49,7 +50,10 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +71,8 @@ public class MyWatchFace extends CanvasWatchFaceService  {
      */
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
     private static final String WEARABLE_DATA_PATH = "/wearable_data";
+    private static final Typeface NORMAL_TYPEFACE =
+            Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
@@ -104,6 +110,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
     private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
             GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener  {
+        private Typeface WATCH_TEXT_TYPEFACE = Typeface.create( Typeface.SERIF, Typeface.NORMAL );
         private static final float HOUR_STROKE_WIDTH = 5f;
         private static final float MINUTE_STROKE_WIDTH = 3f;
         private static final float SECOND_TICK_STROKE_WIDTH = 2f;
@@ -114,7 +121,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         private final Rect mPeekCardBounds = new Rect();
         /* Handler to update the time once a second in interactive mode. */
         private final Handler mUpdateTimeHandler = new EngineHandler(this);
-        private Calendar mCalendar;
+
         private final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -124,27 +131,63 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         };
         private boolean mRegisteredTimeZoneReceiver = false;
         private boolean mMuteMode;
-        private float mCenterX;
-        private float mCenterY;
+
         private float mSecondHandLength;
         private float sMinuteHandLength;
         private float sHourHandLength;
         /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
-        private int mWatchHandColor;
-        private int mWatchHandHighlightColor;
-        private int mWatchHandShadowColor;
+
         private Paint mHourPaint;
         private Paint mMinutePaint;
         private Paint mSecondPaint;
         private Paint mTickAndCirclePaint;
-        private Paint mBackgroundPaint;
+       // private Paint mBackgroundPaint;
         private Bitmap mBackgroundBitmap;
         private Bitmap mGrayBackgroundBitmap;
-        private boolean mAmbient;
-        private boolean mLowBitAmbient;
-        private boolean mBurnInProtection;
 
         GoogleApiClient mGoogleApiClient ;
+        private int mBackgroundColor = Color.parseColor( "blue" );
+        private int mTextColor = Color.parseColor( "white" );
+
+        Paint mBackgroundPaint;
+        Bitmap mWeatherIconBitmap;
+        String mHighTemp;
+        String mLowTemp;
+
+        ///
+        private long mUpdateRateMs = 1000;
+
+        private long DEFAULT_UPDATE_RATE_MS=500;
+
+        private Time mDisplayTime;
+        private static final String DATE_FORMAT = "%02d.%02d.%d";
+
+        private Paint mBackgroundColorPaint;
+        private Paint mTextColorPaint;
+        private Rect bounds;
+        Paint mWeatherIconPaint;
+        Paint mDatePaint;
+
+        private Calendar mCalendar;
+        private SimpleDateFormat mDayOfWeekFormat;
+        private Date mDate;
+
+
+        private boolean mLowBitAmbient;
+        private boolean mAmbient;
+        private boolean mBurnInProtection;
+
+
+        private boolean mHasTimeZoneReceiverBeenRegistered = false;
+        private boolean mIsInMuteMode;
+        private boolean mIsLowBitAmbient;
+        private boolean mRound;
+
+        //Watch face drawn without cuts at the corners
+        private float mXOffset;
+        private float mYOffset;
+        private float mCenterX;
+        private float mCenterY;
 
 
         @Override
@@ -158,57 +201,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                     .setAcceptsTapEvents(true)
                     .build());
 
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(Color.BLACK);
-            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg);
-
-            /* Set defaults for colors */
-            mWatchHandColor = Color.WHITE;
-            mWatchHandHighlightColor = Color.RED;
-            mWatchHandShadowColor = Color.BLACK;
-
-            mHourPaint = new Paint();
-            mHourPaint.setColor(mWatchHandColor);
-            mHourPaint.setStrokeWidth(HOUR_STROKE_WIDTH);
-            mHourPaint.setAntiAlias(true);
-            mHourPaint.setStrokeCap(Paint.Cap.ROUND);
-            mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            mMinutePaint = new Paint();
-            mMinutePaint.setColor(mWatchHandColor);
-            mMinutePaint.setStrokeWidth(MINUTE_STROKE_WIDTH);
-            mMinutePaint.setAntiAlias(true);
-            mMinutePaint.setStrokeCap(Paint.Cap.ROUND);
-            mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            mSecondPaint = new Paint();
-            mSecondPaint.setColor(mWatchHandHighlightColor);
-            mSecondPaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
-            mSecondPaint.setAntiAlias(true);
-            mSecondPaint.setStrokeCap(Paint.Cap.ROUND);
-            mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            mTickAndCirclePaint = new Paint();
-            mTickAndCirclePaint.setColor(mWatchHandColor);
-            mTickAndCirclePaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
-            mTickAndCirclePaint.setAntiAlias(true);
-            mTickAndCirclePaint.setStyle(Paint.Style.STROKE);
-            mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-
-            /* Extract colors from background image to improve watchface style. */
-            Palette.from(mBackgroundBitmap).generate(new Palette.PaletteAsyncListener() {
-                @Override
-                public void onGenerated(Palette palette) {
-                    if (palette != null) {
-                        mWatchHandHighlightColor = palette.getVibrantColor(Color.RED);
-                        mWatchHandColor = palette.getLightVibrantColor(Color.WHITE);
-                        mWatchHandShadowColor = palette.getDarkMutedColor(Color.BLACK);
-                        updateWatchHandStyle();
-                    }
-                }
-            });
-
-            mCalendar = Calendar.getInstance();
+            initWeatherDetails(0,0,R.drawable.ic_clear);
 
             mGoogleApiClient = new GoogleApiClient.Builder(MyWatchFace.this)
                     .addApi(Wearable.API)
@@ -216,6 +209,11 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                     .addOnConnectionFailedListener(this)
                     .build();
             mGoogleApiClient.connect();
+            initBackground();
+            initDisplayText();
+            mDisplayTime = new Time();
+            mCalendar = Calendar.getInstance();
+            mDate = new Date();
         }
 
         @Override
@@ -242,46 +240,19 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             super.onAmbientModeChanged(inAmbientMode);
             mAmbient = inAmbientMode;
 
-            updateWatchHandStyle();
-
-            /* Check and trigger whether or not timer should be running (only in active mode). */
+                       /* Check and trigger whether or not timer should be running (only in active mode). */
             updateTimer();
         }
 
-        private void updateWatchHandStyle() {
-            if (mAmbient) {
-                mHourPaint.setColor(Color.WHITE);
-                mMinutePaint.setColor(Color.WHITE);
-                mSecondPaint.setColor(Color.WHITE);
-                mTickAndCirclePaint.setColor(Color.WHITE);
-
-                mHourPaint.setAntiAlias(false);
-                mMinutePaint.setAntiAlias(false);
-                mSecondPaint.setAntiAlias(false);
-                mTickAndCirclePaint.setAntiAlias(false);
-
-                mHourPaint.clearShadowLayer();
-                mMinutePaint.clearShadowLayer();
-                mSecondPaint.clearShadowLayer();
-                mTickAndCirclePaint.clearShadowLayer();
-
-            } else {
-                mHourPaint.setColor(mWatchHandColor);
-                mMinutePaint.setColor(mWatchHandColor);
-                mSecondPaint.setColor(mWatchHandHighlightColor);
-                mTickAndCirclePaint.setColor(mWatchHandColor);
-
-                mHourPaint.setAntiAlias(true);
-                mMinutePaint.setAntiAlias(true);
-                mSecondPaint.setAntiAlias(true);
-                mTickAndCirclePaint.setAntiAlias(true);
-
-                mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mMinutePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-                mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-            }
+        private Paint createTextPaint(int textColor) {
+            Paint paint = new Paint();
+            paint.setColor(textColor);
+            paint.setTypeface(NORMAL_TYPEFACE);
+            paint.setAntiAlias(true);
+            return paint;
         }
+
+       
 
         @Override
         public void onInterruptionFilterChanged(int interruptionFilter) {
@@ -318,12 +289,12 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             sHourHandLength = (float) (mCenterX * 0.5);
 
 
-            /* Scale loaded background image (more efficient) if surface dimensions change. */
+            /* Scale loaded background image (more efficient) if surface dimensions change.
             float scale = ((float) width) / (float) mBackgroundBitmap.getWidth();
 
             mBackgroundBitmap = Bitmap.createScaledBitmap(mBackgroundBitmap,
                     (int) (mBackgroundBitmap.getWidth() * scale),
-                    (int) (mBackgroundBitmap.getHeight() * scale), true);
+                    (int) (mBackgroundBitmap.getHeight() * scale), true);*/
 
             /*
              * Create a gray version of the image only if it will look nice on the device in
@@ -334,10 +305,10 @@ public class MyWatchFace extends CanvasWatchFaceService  {
              * Also, if your watch face will know about all images ahead of time (users aren't
              * selecting their own photos for the watch face), it will be more
              * efficient to create a black/white version (png, etc.) and load that when you need it.
-             */
+
             if (!mBurnInProtection && !mLowBitAmbient) {
                 initGrayBackgroundBitmap();
-            }
+            }*/
         }
 
         private void initGrayBackgroundBitmap() {
@@ -378,96 +349,129 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         }
 
         @Override
-        public void onDraw(Canvas canvas, Rect bounds) {
+        public void onDraw(Canvas canvas, Rect bounds)
+        {
+
+            super.onDraw(canvas, bounds);
+           // mDisplayTime.clear( TimeZone.getDefault().getID() );
+            mDisplayTime.setToNow();
+
+
+            //background color
+
+            canvas.drawRect( 0, 0, bounds.width(), bounds.height(), mBackgroundPaint );
+
+
+            //time
+
+            String timeText = getHourString() + ":" + String.format( "%02d", mDisplayTime.minute);
+
+            if( isInAmbientMode() || mIsInMuteMode )
+            {
+
+                timeText += ( mDisplayTime.hour < 12 ) ? "AM" : "PM";
+
+            }
+            else
+            {
+
+                timeText += String.format( ":%02d", mDisplayTime.second);
+
+            }
+
+            canvas.drawText( timeText, mXOffset, mYOffset, mTextColorPaint );
+
+
+            //date
+
+            String dateText = String.format(DATE_FORMAT, mDisplayTime.monthDay,(mDisplayTime.month + 1), mDisplayTime.year);
+
             long now = System.currentTimeMillis();
+
             mCalendar.setTimeInMillis(now);
 
-            if (mAmbient && (mLowBitAmbient || mBurnInProtection)) {
-                canvas.drawColor(Color.BLACK);
-            } else if (mAmbient) {
-                canvas.drawBitmap(mGrayBackgroundBitmap, 0, 0, mBackgroundPaint);
-            } else {
-                canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
-            }
+            mDate.setTime(now);
 
-            /*
-             * Draw ticks. Usually you will want to bake this directly into the photo, but in
-             * cases where you want to allow users to select their own photos, this dynamically
-             * creates them on top of the photo.
-             */
-            float innerTickRadius = mCenterX - 10;
-            float outerTickRadius = mCenterX;
-            for (int tickIndex = 0; tickIndex < 12; tickIndex++) {
-                float tickRot = (float) (tickIndex * Math.PI * 2 / 12);
-                float innerX = (float) Math.sin(tickRot) * innerTickRadius;
-                float innerY = (float) -Math.cos(tickRot) * innerTickRadius;
-                float outerX = (float) Math.sin(tickRot) * outerTickRadius;
-                float outerY = (float) -Math.cos(tickRot) * outerTickRadius;
-                canvas.drawLine(mCenterX + innerX, mCenterY + innerY,
-                        mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint);
-            }
+            float y = getTextHeight(dateText, mTextColorPaint) + mYOffset - 20;
 
-            /*
-             * These calculations reflect the rotation in degrees per unit of time, e.g.,
-             * 360 / 60 = 6 and 360 / 12 = 30.
-             */
-            final float seconds =
-                    (mCalendar.get(Calendar.SECOND) + mCalendar.get(Calendar.MILLISECOND) / 1000f);
-            final float secondsRotation = seconds * 6f;
+            y += getTextHeight(dateText, mTextColorPaint);
 
-            final float minutesRotation = mCalendar.get(Calendar.MINUTE) * 6f;
+            float x = mXOffset;
 
-            final float hourHandOffset = mCalendar.get(Calendar.MINUTE) / 2f;
-            final float hoursRotation = (mCalendar.get(Calendar.HOUR) * 30) + hourHandOffset;
+            mDayOfWeekFormat = new SimpleDateFormat("EEE, dd MMMM", Locale.getDefault());
 
-            /*
-             * Save the canvas state before we can begin to rotate it.
-             */
-            canvas.save();
+            mDayOfWeekFormat.setCalendar(mCalendar);
 
-            canvas.rotate(hoursRotation, mCenterX, mCenterY);
-            canvas.drawLine(
-                    mCenterX,
-                    mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                    mCenterX,
-                    mCenterY - sHourHandLength,
-                    mHourPaint);
+            String dayString = mDayOfWeekFormat.format(mDate);
 
-            canvas.rotate(minutesRotation - hoursRotation, mCenterX, mCenterY);
-            canvas.drawLine(
-                    mCenterX,
-                    mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                    mCenterX,
-                    mCenterY - sMinuteHandLength,
-                    mMinutePaint);
+            x = (bounds.width() - mDatePaint.measureText(dayString)) / 2;
 
-            /*
-             * Ensure the "seconds" hand is drawn only when we are in interactive mode.
-             * Otherwise, we only update the watch face once a minute.
-             */
-            if (!mAmbient) {
-                canvas.rotate(secondsRotation - minutesRotation, mCenterX, mCenterY);
-                canvas.drawLine(
-                        mCenterX,
-                        mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
-                        mCenterX,
-                        mCenterY - mSecondHandLength,
-                        mSecondPaint);
+            canvas.drawText(dayString, x, y, mDatePaint);
 
-            }
-            canvas.drawCircle(
-                    mCenterX,
-                    mCenterY,
-                    CENTER_GAP_AND_CIRCLE_RADIUS,
-                    mTickAndCirclePaint);
 
-            /* Restore the canvas' original orientation. */
-            canvas.restore();
+            //temperature
 
-            /* Draw rectangle behind peek card in ambient mode to improve readability. */
+            int dummy = 0;
             if (mAmbient) {
-                canvas.drawRect(mPeekCardBounds, mBackgroundPaint);
+                if (!mLowBitAmbient && !mBurnInProtection) {
+                    dummy = 2;
+                }
+            } else {
+                dummy = 1;
             }
+
+            if (dummy > 0) {
+
+                y = getTextHeight(dayString, mDatePaint) + mYOffset - 20;
+
+                y += getTextHeight(timeText, mDatePaint);
+
+                x = mXOffset;
+
+                x = (bounds.width() - (mWeatherIconBitmap.getWidth() + 20 + mTextColorPaint.measureText(mHighTemp))) / 2;
+
+                if (dummy == 1)
+                {
+                    if(!isInAmbientMode())
+                        canvas.drawBitmap(mWeatherIconBitmap, x, y, mWeatherIconPaint);
+
+                }
+                //   else
+                //   {
+
+                //       canvas.drawBitmap(mGrayWeatherIconBitmap, x, y, mWeatherIconPaint);
+
+                //   }
+
+                x += mWeatherIconBitmap.getWidth() + 5;
+
+                y = y + mWeatherIconBitmap.getHeight() / 2;
+
+                canvas.drawText(mHighTemp, x, y - 5, mDatePaint);
+
+                y += getTextHeight(mHighTemp, mTextColorPaint);
+
+                canvas.drawText(mLowTemp, x, y + 5, mDatePaint);
+
+            }
+
+        }
+
+        private float getTextHeight(String text, Paint paint) {
+
+            Rect rect = new Rect();
+            paint.getTextBounds(text, 0, text.length(), rect);
+            return rect.height();
+        }
+
+        private String getHourString()
+        {
+            if( mDisplayTime.hour % 12 == 0 )
+                return "12";
+            else if( mDisplayTime.hour <= 12 )
+                return String.valueOf( mDisplayTime.hour );
+            else
+                return String.valueOf( mDisplayTime.hour - 12 );
         }
 
         @Override
@@ -533,10 +537,21 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                     // Check the data path
                     String path = event.getDataItem().getUri().getPath();
                     if (path.equals(WEARABLE_DATA_PATH)) {
+                        continue;
                     }
-                    dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
-                    Log.v("myTag", "DataMap received on watch: " + dataMap);
-                }   }
+                   // dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+                     dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+
+                        int high = (int) Math.round(dataMap.getDouble("highTemp"));
+                        int low = (int) Math.round(dataMap.getDouble("lowTemp"));
+                        int id = (int)dataMap.getLong("weatherId");
+                        int icon = utility.getWeatherIcon(id);
+                        initWeatherDetails(high, low, icon);
+                        invalidate();
+
+                }
+            }
+
 
         }
 
@@ -578,6 +593,41 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) {
             Log.i(TAG, "onConnectionFailed");
+        }
+
+        private void initBackground() {
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setColor( mBackgroundColor );
+           //mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg);
+        }
+
+        private void initDisplayText() {
+            mTextColorPaint = new Paint();
+            mTextColorPaint.setColor( mTextColor );
+            mTextColorPaint.setTypeface( WATCH_TEXT_TYPEFACE );
+            mTextColorPaint.setAntiAlias( true );
+            mTextColorPaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
+
+            mDatePaint = new Paint();
+            mDatePaint.setColor( mTextColor );
+            mDatePaint.setAntiAlias( true );
+            mDatePaint.setTypeface( WATCH_TEXT_TYPEFACE );
+            mDatePaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
+
+            mWeatherIconPaint = new Paint();
+
+        }
+
+        private void initWeatherDetails(int high, int low, int icon  ){
+
+            int resID = getResources().getIdentifier("ic_" + icon , "drawable", getPackageName());
+
+            mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), icon);
+           // mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), resID);
+
+            mHighTemp = String.format("%3s",String.valueOf(high)) + "° C";
+            mLowTemp = String.format("%3s",String.valueOf(low)) + "° C";
+
         }
     }
 }

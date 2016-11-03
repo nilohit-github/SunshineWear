@@ -86,11 +86,16 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
     private static final int INDEX_MAX_TEMP = 1;
     private static final int INDEX_MIN_TEMP = 2;
     private static final int INDEX_SHORT_DESC = 3;
+    public int mWeatherID;
+    public double mHighTem;
+    public double mLowTemp;
+    public String mWeatherDesc;
+    //public String mDatetime;
 
     @Override
     public void onConnected(Bundle bundle) {
 
-        int a=1, b=123, c=12345;
+        //int a=1, b=123, c=12345;
         Log.d("inside onconnected", "test0");
         sendDataToWatch();
        // Log.d("sendDataCall",weatherIdToday+" "+highString+" " +lowString);
@@ -111,9 +116,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
     {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/wearable_data");
         Log.d("inside senddatawatch", "test1");
-        putDataMapRequest.getDataMap().putInt("weatherId", 10);
-        putDataMapRequest.getDataMap().putString("highTemp", "11");
-        putDataMapRequest.getDataMap().putString("lowTemp", "1");
+        putDataMapRequest.getDataMap().putInt("weatherId", mWeatherID);
+        putDataMapRequest.getDataMap().putDouble("highTemp", mHighTem);
+        putDataMapRequest.getDataMap().putDouble("lowTemp", mLowTemp);
+        putDataMapRequest.getDataMap().putString("description",mWeatherDesc);
         putDataMapRequest.getDataMap().putInt("timeStamp", (int) (System.currentTimeMillis())      );
 
         Log.d("Datamap",putDataMapRequest.toString());
@@ -152,7 +158,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         Log.d(LOG_TAG, "Starting sync");
-        Log.i(LOG_TAG, "Starting sync");
+
 
         // We no longer need just the location String, but also potentially the latitude and
         // longitude, in case we are syncing based on a new Place Picker API result.
@@ -412,6 +418,14 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                 weatherValues.put(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID, weatherId);
 
                 cVVector.add(weatherValues);
+                while(i==0)
+                {
+                    mHighTem = high;
+                    mLowTemp = low;
+                    mWeatherID = weatherId;
+                    mWeatherDesc = description;
+
+                }
             }
 
             int inserted = 0;
