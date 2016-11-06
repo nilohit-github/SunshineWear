@@ -3,8 +3,9 @@
 
     <dimen name="y_offset">20dp</dimen>
     <dimen name="x_offset">50dp</dimen>
-    <dimen name="x_offset_square">15dp</dimen>
+    <dimen name="x_offset_square">50dp</dimen>
     <dimen name="x_offset_round">25dp</dimen>
+    <dimen name="y_offset_round">60dp</dimen>
     <dimen name="text_size">20sp</dimen>
     <dimen name="date_text_size">15sp</dimen>
 

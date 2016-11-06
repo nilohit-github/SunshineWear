@@ -38,6 +38,7 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.view.WindowInsets;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -251,6 +252,26 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             updateTimer();
         }
 
+        @Override
+        public void onApplyWindowInsets(WindowInsets insets)
+        {
+            super.onApplyWindowInsets(insets);
+
+            mYOffset = getResources().getDimension( R.dimen.y_offset );
+            if( insets.isRound() )
+            {
+                mXOffset = getResources().getDimension( R.dimen.x_offset_round );
+                mYOffset = getResources().getDimension( R.dimen.y_offset_round );
+                mRound = true;
+            }
+            else
+            {
+                mXOffset = getResources().getDimension( R.dimen.x_offset_square );
+            }
+            Log.d("onApplyWin x offset::", String.valueOf(mXOffset));
+            Log.d("onApplyWin y offset::", String.valueOf(mYOffset));
+        }
+
         private Paint createTextPaint(int textColor) {
             Paint paint = new Paint();
             paint.setColor(textColor);
@@ -385,9 +406,16 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                 timeText += String.format( ":%02d", mDisplayTime.second);
 
             }
-            mXOffset = getResources().getDimension( R.dimen.x_offset );
-            mYOffset = getResources().getDimension( R.dimen.y_offset );
-            canvas.drawText( timeText, mXOffset, mYOffset+20, mTextColorPaint );
+            //mXOffset = getResources().getDimension( R.dimen.x_offset_square );
+            //mYOffset = getResources().getDimension( R.dimen.y_offset );
+            if(mRound)
+            {
+                canvas.drawText( timeText, mXOffset+45, mYOffset+20, mTextColorPaint );
+            }
+            else{
+                canvas.drawText( timeText, mXOffset, mYOffset+20, mTextColorPaint );
+
+            }
 
 
             //date
