@@ -24,8 +24,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -59,9 +57,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't
- * shown. On devices with low-bit ambient mode, the hands are drawn without anti-aliasing in ambient
- * mode. The watch face is drawn with less contrast in mute mode.
+ * Analog watch face
  */
 public class MyWatchFace extends CanvasWatchFaceService  {
     private static final String TAG = "MyWatchFace";
@@ -112,13 +108,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
     private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
             GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener  {
         private Typeface WATCH_TEXT_TYPEFACE = Typeface.create( Typeface.SERIF, Typeface.NORMAL );
-        private static final float HOUR_STROKE_WIDTH = 5f;
-        private static final float MINUTE_STROKE_WIDTH = 3f;
-        private static final float SECOND_TICK_STROKE_WIDTH = 2f;
-
-        private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f;
-
-        private static final int SHADOW_RADIUS = 6;
         private final Rect mPeekCardBounds = new Rect();
         /* Handler to update the time once a second in interactive mode. */
         private final Handler mUpdateTimeHandler = new EngineHandler(this);
@@ -132,24 +121,11 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         };
         private boolean mRegisteredTimeZoneReceiver = false;
         private boolean mMuteMode;
-
-        private float mSecondHandLength;
-        private float sMinuteHandLength;
-        private float sHourHandLength;
-        /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
-
-        private Paint mHourPaint;
         private Paint mHighTemperaturePaint;
         private Paint mLowTemperaturePaint;
-        private Paint mMinutePaint;
-        private Paint mSecondPaint;
-        private Paint mTickAndCirclePaint;
-       // private Paint mBackgroundPaint;
-        private Bitmap mBackgroundBitmap;
-        private Bitmap mGrayBackgroundBitmap;
+
 
         GoogleApiClient mGoogleApiClient ;
-       // private int mBackgroundColor = ResourcesCompat.getColor(getResources(), R.color.lightBlue, null);
 
         private int mTextColor = Color.parseColor( "white" );
 
@@ -175,28 +151,17 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         private Calendar mCalendar;
         private SimpleDateFormat mDayOfWeekFormat;
         private Date mDate;
-
-
         private boolean mLowBitAmbient;
         private boolean mAmbient;
         private boolean mBurnInProtection;
-
-
         private boolean mHasTimeZoneReceiverBeenRegistered = false;
         private boolean mIsInMuteMode;
         private boolean mIsLowBitAmbient;
         private boolean mRound;
 
-        //Watch face drawn without cuts at the corners
+        //Watch face coordinates
         private float mXOffset;
         private float mYOffset;
-        private float mCenterX;
-        private float mCenterY;
-        //Resources resources = MyWatchFace.this.getResources();
-
-
-
-
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -272,87 +237,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             Log.d("onApplyWin y offset::", String.valueOf(mYOffset));
         }
 
-        private Paint createTextPaint(int textColor) {
-            Paint paint = new Paint();
-            paint.setColor(textColor);
-            paint.setTypeface(NORMAL_TYPEFACE);
-            paint.setAntiAlias(true);
-            return paint;
-        }
-
-       
-
-        @Override
-        public void onInterruptionFilterChanged(int interruptionFilter) {
-            super.onInterruptionFilterChanged(interruptionFilter);
-            boolean inMuteMode = (interruptionFilter == WatchFaceService.INTERRUPTION_FILTER_NONE);
-
-            /* Dim display in mute mode. */
-            if (mMuteMode != inMuteMode) {
-                mMuteMode = inMuteMode;
-                mHourPaint.setAlpha(inMuteMode ? 100 : 255);
-                mMinutePaint.setAlpha(inMuteMode ? 100 : 255);
-                mSecondPaint.setAlpha(inMuteMode ? 80 : 255);
-                invalidate();
-            }
-        }
-
-        @Override
-        public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            super.onSurfaceChanged(holder, format, width, height);
-
-            /*
-             * Find the coordinates of the center point on the screen, and ignore the window
-             * insets, so that, on round watches with a "chin", the watch face is centered on the
-             * entire screen, not just the usable portion.
-             */
-            mCenterX = width / 2f;
-            mCenterY = height / 2f;
-
-            /*
-             * Calculate lengths of different hands based on watch screen size.
-             */
-            mSecondHandLength = (float) (mCenterX * 0.875);
-            sMinuteHandLength = (float) (mCenterX * 0.75);
-            sHourHandLength = (float) (mCenterX * 0.5);
-
-
-            /* Scale loaded background image (more efficient) if surface dimensions change.
-            float scale = ((float) width) / (float) mBackgroundBitmap.getWidth();
-
-            mBackgroundBitmap = Bitmap.createScaledBitmap(mBackgroundBitmap,
-                    (int) (mBackgroundBitmap.getWidth() * scale),
-                    (int) (mBackgroundBitmap.getHeight() * scale), true);*/
-
-            /*
-             * Create a gray version of the image only if it will look nice on the device in
-             * ambient mode. That means we don't want devices that support burn-in
-             * protection (slight movements in pixels, not great for images going all the way to
-             * edges) and low ambient mode (degrades image quality).
-             *
-             * Also, if your watch face will know about all images ahead of time (users aren't
-             * selecting their own photos for the watch face), it will be more
-             * efficient to create a black/white version (png, etc.) and load that when you need it.
-
-            if (!mBurnInProtection && !mLowBitAmbient) {
-                initGrayBackgroundBitmap();
-            }*/
-        }
-
-        private void initGrayBackgroundBitmap() {
-            mGrayBackgroundBitmap = Bitmap.createBitmap(
-                    mBackgroundBitmap.getWidth(),
-                    mBackgroundBitmap.getHeight(),
-                    Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(mGrayBackgroundBitmap);
-            Paint grayPaint = new Paint();
-            ColorMatrix colorMatrix = new ColorMatrix();
-            colorMatrix.setSaturation(0);
-            ColorMatrixColorFilter filter = new ColorMatrixColorFilter(colorMatrix);
-            grayPaint.setColorFilter(filter);
-            canvas.drawBitmap(mBackgroundBitmap, 0, 0, grayPaint);
-        }
-
         /**
          * Captures tap event (and tap type). The {@link WatchFaceService#TAP_TYPE_TAP} case can be
          * used for implementing specific logic to handle the gesture.
@@ -381,40 +265,25 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         {
             Log.d("Ondraw::", "inside on draw");
             super.onDraw(canvas, bounds);
-           // mDisplayTime.clear( TimeZone.getDefault().getID() );
             mDisplayTime.setToNow();
 
-
             //background color
-
             canvas.drawRect( 0, 0, bounds.width(), bounds.height(), mBackgroundPaint );
-
-
             //time
-
             String timeText = getHourString() + ":" + String.format( "%02d", mDisplayTime.minute);
 
-            if( isInAmbientMode() || mIsInMuteMode )
-            {
-
+            if( isInAmbientMode() || mIsInMuteMode ){
                 timeText += ( mDisplayTime.hour < 12 ) ? "AM" : "PM";
-
             }
-            else
-            {
-
+            else{
                 timeText += String.format( ":%02d", mDisplayTime.second);
-
             }
-            //mXOffset = getResources().getDimension( R.dimen.x_offset_square );
-            //mYOffset = getResources().getDimension( R.dimen.y_offset );
-            if(mRound)
-            {
+
+            if(mRound){
                 canvas.drawText( timeText, mXOffset+45, mYOffset+20, mTextColorPaint );
             }
             else{
                 canvas.drawText( timeText, mXOffset, mYOffset+20, mTextColorPaint );
-
             }
 
 
@@ -472,23 +341,13 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                         canvas.drawBitmap(mWeatherIconBitmap, x, y, mWeatherIconPaint);
 
                 }
-                //   else
-                //   {
 
-                //       canvas.drawBitmap(mGrayWeatherIconBitmap, x, y, mWeatherIconPaint);
-
-                //   }
 
                 x += mWeatherIconBitmap.getWidth() + 5;
-
                 y = y + mWeatherIconBitmap.getHeight() / 2;
-
                 canvas.drawText(mHighTemp, x, y - 5, mHighTemperaturePaint);
-
                 y += getTextHeight(mHighTemp, mTextColorPaint);
-
                 canvas.drawText(mLowTemp, x, y + 5, mLowTemperaturePaint);
-
             }
 
         }
@@ -515,7 +374,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             super.onVisibilityChanged(visible);
 
             if (visible) {
-               // mGoogleApiClient.connect();
                 registerReceiver();
                 /* Update time zone in case it changed while we weren't visible. */
                 mCalendar.setTimeZone(TimeZone.getDefault());
@@ -583,7 +441,8 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                         int high = (int) Math.round(dataMap.getDouble("highTemp"));
                         int low = (int) Math.round(dataMap.getDouble("lowTemp"));
 
-                        int id = (int) dataMap.getLong("weatherId");
+                        int id = dataMap.getInt("weatherId");
+                        Log.d("weather id::", String.valueOf(id));
                         int icon = utility.getWeatherIcon(id);
                         initWeatherDetails(high, low, icon);
                         invalidate();
@@ -595,9 +454,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
 
         }
-
-
-
 
         /**
          * Returns whether the {@link #mUpdateTimeHandler} timer should be running. The timer
@@ -639,8 +495,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         private void initBackground() {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(getResources().getColor(R.color.lightBlue));
-           // mBackgroundPaint.setColor( mBackgroundColor );
-           //mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg);
+
         }
 
         private void initDisplayText() {
@@ -676,14 +531,9 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             Log.d("initWeatherDetails::", String.valueOf(high));
             Log.d("initWeatherDetails::", String.valueOf(low));
             int resID = getResources().getIdentifier("ic_" + icon , "drawable", getPackageName());
-
             mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), icon);
-           // mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), resID);
-
-           // mHighTemp = String.format("%3s",String.valueOf(high)) + "° C";
-           // mLowTemp = String.format("%3s",String.valueOf(low)) + "° C";
-             mHighTemp = String.valueOf(high) + "° F";
-             mLowTemp =  String.valueOf(low) + "° F";
+            mHighTemp = String.valueOf(high) + "° F";
+            mLowTemp =  String.valueOf(low) + "° F";
 
         }
     }
