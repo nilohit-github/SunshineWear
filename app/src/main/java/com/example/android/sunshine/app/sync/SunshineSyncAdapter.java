@@ -121,7 +121,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
         putDataMapRequest.getDataMap().putDouble("lowTemp", mLowTemp);
         putDataMapRequest.getDataMap().putString("description",mWeatherDesc);
         putDataMapRequest.getDataMap().putInt("timeStamp", (int) (System.currentTimeMillis())      );
-
+        Log.d("Datamap in sync high", String.valueOf(mHighTem));
+        Log.d("Datamap in sync low", String.valueOf(mLowTemp));
         Log.d("Datamap",putDataMapRequest.toString());
 
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
@@ -418,12 +419,14 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                 weatherValues.put(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID, weatherId);
 
                 cVVector.add(weatherValues);
-                while(i==0)
+                if(i==0)
                 {
                     mHighTem = high;
                     mLowTemp = low;
                     mWeatherID = weatherId;
                     mWeatherDesc = description;
+                    mHighTem = (mHighTem * 1.8) + 32;
+                    mLowTemp = (mLowTemp * 1.8) + 32;
 
                 }
             }
