@@ -34,7 +34,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.2"
-        sha1="d26242d6cf6c60f054352026b6cd2b6d5c64824a">
+        sha1="362f0c4d362cb322b2317f556b0b50b0631db145">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\sunshinewearapp\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run-bootstrap_49de5546dc8260bad7a5ad92005fdbb04410a89d\classes.dex" />
     </item>
     <item
@@ -133,7 +133,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.2"
-        sha1="3524714a38c1996ba2f1ea7b45cf427158007c3d">
+        sha1="26bab9c67260a5b7c1b4956aaa64e6d9381b328a">
         <dex dex="C:\Users\jhani\AndroidStudioProjects\Advanced_Android_Development\sunshinewearapp\build\intermediates\transforms\dex\debug\folders\1000\10\instant-run_460cc25e09e39ae0f1403733384be7e50ab4c833\classes.dex" />
     </item>
     <item
