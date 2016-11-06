@@ -138,8 +138,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         /* Colors for all hands (hour, minute, seconds, ticks) based on photo loaded. */
 
         private Paint mHourPaint;
-        private Paint mHighTemperaturePaint;
-        private Paint mLowTemperaturePaint;
         private Paint mMinutePaint;
         private Paint mSecondPaint;
         private Paint mTickAndCirclePaint;
@@ -148,8 +146,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         private Bitmap mGrayBackgroundBitmap;
 
         GoogleApiClient mGoogleApiClient ;
-       // private int mBackgroundColor = ResourcesCompat.getColor(getResources(), R.color.lightBlue, null);
-
+        private int mBackgroundColor = Color.parseColor( "blue" );
         private int mTextColor = Color.parseColor( "white" );
 
         Paint mBackgroundPaint;
@@ -191,10 +188,6 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         private float mYOffset;
         private float mCenterX;
         private float mCenterY;
-        //Resources resources = MyWatchFace.this.getResources();
-
-
-
 
 
         @Override
@@ -358,7 +351,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         @Override
         public void onDraw(Canvas canvas, Rect bounds)
         {
-            Log.d("Ondraw::", "inside on draw");
+
             super.onDraw(canvas, bounds);
            // mDisplayTime.clear( TimeZone.getDefault().getID() );
             mDisplayTime.setToNow();
@@ -385,9 +378,8 @@ public class MyWatchFace extends CanvasWatchFaceService  {
                 timeText += String.format( ":%02d", mDisplayTime.second);
 
             }
-            mXOffset = getResources().getDimension( R.dimen.x_offset );
-            mYOffset = getResources().getDimension( R.dimen.y_offset );
-            canvas.drawText( timeText, mXOffset, mYOffset+20, mTextColorPaint );
+
+            canvas.drawText( timeText, mXOffset, mYOffset, mTextColorPaint );
 
 
             //date
@@ -400,21 +392,21 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
             mDate.setTime(now);
 
-            float y = getTextHeight(dateText, mTextColorPaint) + mYOffset +10;
+            float y = getTextHeight(dateText, mTextColorPaint) + mYOffset - 20;
 
             y += getTextHeight(dateText, mTextColorPaint);
-            mXOffset = getResources().getDimension( R.dimen.x_offset );
-            float x =mXOffset;
 
-            mDayOfWeekFormat = new SimpleDateFormat("EEE, dd MMM", Locale.getDefault());
+            float x = mXOffset;
+
+            mDayOfWeekFormat = new SimpleDateFormat("EEE, dd MMMM", Locale.getDefault());
 
             mDayOfWeekFormat.setCalendar(mCalendar);
-            int thisYear = mCalendar.get(Calendar.YEAR);
-            String dayString = mDayOfWeekFormat.format(mDate)+" "+thisYear ;
+
+            String dayString = mDayOfWeekFormat.format(mDate);
 
             x = (bounds.width() - mDatePaint.measureText(dayString)) / 2;
 
-            canvas.drawText(dayString.toUpperCase(), x, y, mDatePaint);
+            canvas.drawText(dayString, x, y, mDatePaint);
 
 
             //temperature
@@ -430,7 +422,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
             if (dummy > 0) {
 
-                y = getTextHeight(dayString, mDatePaint) + mYOffset +50;
+                y = getTextHeight(dayString, mDatePaint) + mYOffset - 20;
 
                 y += getTextHeight(timeText, mDatePaint);
 
@@ -455,11 +447,11 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
                 y = y + mWeatherIconBitmap.getHeight() / 2;
 
-                canvas.drawText(mHighTemp, x, y - 5, mHighTemperaturePaint);
+                canvas.drawText(mHighTemp, x, y - 5, mDatePaint);
 
                 y += getTextHeight(mHighTemp, mTextColorPaint);
 
-                canvas.drawText(mLowTemp, x, y + 5, mLowTemperaturePaint);
+                canvas.drawText(mLowTemp, x, y + 5, mDatePaint);
 
             }
 
@@ -536,31 +528,26 @@ public class MyWatchFace extends CanvasWatchFaceService  {
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
 
-            Log.d("DataChange in::","222");
+            Log.d("DataChange in::","222222");
             DataMap dataMap;
             for (DataEvent event : dataEventBuffer) {
 
                 // Check the data type
                 if (event.getType() == DataEvent.TYPE_CHANGED) {
-                    Log.d("DataChange in::","333");
                     // Check the data path
                     String path = event.getDataItem().getUri().getPath();
                     if (path.equals(WEARABLE_DATA_PATH)) {
-                        Log.d("DataChange in::", "444");
+                        continue;
+                    }
+                   // dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+                     dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
 
-
-                        // dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
-                        dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
-                        Log.d("DataChange in::", "555");
                         int high = (int) Math.round(dataMap.getDouble("highTemp"));
                         int low = (int) Math.round(dataMap.getDouble("lowTemp"));
-
-                        int id = (int) dataMap.getLong("weatherId");
+                        int id = (int)dataMap.getLong("weatherId");
                         int icon = utility.getWeatherIcon(id);
                         initWeatherDetails(high, low, icon);
                         invalidate();
-                        continue;
-                    }
 
                 }
             }
@@ -610,8 +597,7 @@ public class MyWatchFace extends CanvasWatchFaceService  {
 
         private void initBackground() {
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(getResources().getColor(R.color.lightBlue));
-           // mBackgroundPaint.setColor( mBackgroundColor );
+            mBackgroundPaint.setColor( mBackgroundColor );
            //mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.bg);
         }
 
@@ -623,39 +609,24 @@ public class MyWatchFace extends CanvasWatchFaceService  {
             mTextColorPaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
 
             mDatePaint = new Paint();
-            mDatePaint.setColor(getResources().getColor(R.color.dullWhite));
+            mDatePaint.setColor( mTextColor );
             mDatePaint.setAntiAlias( true );
             mDatePaint.setTypeface( WATCH_TEXT_TYPEFACE );
-            mDatePaint.setTextSize( getResources().getDimension( R.dimen.date_text_size ) );
-
-            mLowTemperaturePaint = new Paint();
-            mLowTemperaturePaint.setColor(getResources().getColor(R.color.dullWhite));
-            mLowTemperaturePaint.setAntiAlias( true );
-            mLowTemperaturePaint.setTypeface( WATCH_TEXT_TYPEFACE );
-            mLowTemperaturePaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
-
-            mHighTemperaturePaint = new Paint();
-            mHighTemperaturePaint.setColor( mTextColor );
-            mHighTemperaturePaint.setAntiAlias( true );
-            mHighTemperaturePaint.setTypeface( WATCH_TEXT_TYPEFACE );
-            mHighTemperaturePaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
+            mDatePaint.setTextSize( getResources().getDimension( R.dimen.text_size ) );
 
             mWeatherIconPaint = new Paint();
 
         }
 
         private void initWeatherDetails(int high, int low, int icon  ){
-            Log.d("initWeatherDetails::", String.valueOf(high));
-            Log.d("initWeatherDetails::", String.valueOf(low));
+
             int resID = getResources().getIdentifier("ic_" + icon , "drawable", getPackageName());
 
             mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), icon);
            // mWeatherIconBitmap = BitmapFactory.decodeResource(getResources(), resID);
 
-           // mHighTemp = String.format("%3s",String.valueOf(high)) + "° C";
-           // mLowTemp = String.format("%3s",String.valueOf(low)) + "° C";
-             mHighTemp = String.valueOf(high) + "° F";
-             mLowTemp =  String.valueOf(low) + "° F";
+            mHighTemp = String.format("%3s",String.valueOf(high)) + "° C";
+            mLowTemp = String.format("%3s",String.valueOf(low)) + "° C";
 
         }
     }
